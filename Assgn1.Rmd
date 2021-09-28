@@ -1,0 +1,236 @@
+---
+title: "R Assignment 1"
+author: "Kevin Duan"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(tidyverse)
+library(plotly)
+library(data.table)
+```
+
+```{r}
+ get_dset <- function(filepath, type, filtertype){
+   setwd(filepath)
+   years <- 2017:2021
+   quarters <- 1:4
+   months <- 1:12
+   
+   bigdat <- NULL
+   
+   my_length <- 10
+   DateInfo <- rep(NA, my_length)
+   EnergySum <- rep(NA, my_length)
+   CustomerClass <- rep(NA, my_length)
+   
+   for(year in years){
+     
+     for(quarter in quarters){
+       if(year == 2021 & quarter >= 3) {break}
+       filename <- paste0(
+         "PGE_",
+         year,
+         "_Q",
+         quarter,
+         "_",
+         type,
+         "UsageByZip.CSV"
+         
+       )
+           print(filename)
+           temp <-read.csv(filename)
+           temp <- filter(temp, CUSTOMERCLASS %in%
+                c(
+                  filtertype
+                )
+            )
+           tempsort <- temp[order(temp$MONTH),]
+           #tempsort2 <- sum(tempsort$MONTH[tempsort])
+           print(tempsort)
+           names(tempsort)[1] <- "ZIPCODE"
+           bigdat <- rbind(bigdat,tempsort)
+           #print(bigdat)
+           
+     }
+     
+     
+   }
+   
+   for(year in years){
+     for(month in months){
+         tempsum <- bigdat["MONTH" == month & "YEAR" == year, sum("TOTALTHM")]
+         EnergySum.append(tempsum)
+         print(EnergySum)
+         datename <- paste(
+           year(),
+        month(), 
+        "01",
+        sep="-"
+      ) %>% as.Date()
+         DateInfo.append(datename)
+         print(DateInfo)
+         CustomerClass.append(filtertype)
+         print(CustomerClass)
+       
+     }
+     
+   }
+   
+   returndat <- data.frame(DateInfo,EnergySum,CustomerClass)
+   print(returndat)
+   
+   return(returndat)
+   
+   #   
+#   blank <- list() # creates a list
+#   listcsv <- dir(pattern = "*.csv") # creates the list of all the csv   files in the directory
+#   print(listcsv)
+#   for (k in 1:length(listcsv)){
+#     if(k==1) { 
+#       bigdat <- read.csv(listcsv[k]) 
+#       print(bigdat)
+#       }
+#     else {
+#       temp <- read.csv(listcsv[k])
+#       temp1 <- bigdat
+#       bigdat <- rbind(temp1,temp)
+#       print(bigdat)
+#     }
+#   }
+# return(bigdat)
+}
+
+```
+
+```{r}
+library(tidyverse)
+
+year <- 2020
+quarters <- 1:4
+type <- "Electric"
+
+pge_20_elec <- NULL
+
+for(quarter in quarters) {
+  
+  filename <- 
+    paste0(
+      "pge/PGE_",
+      year,
+      "_Q",
+      quarter,
+      "_",
+      type,
+      "UsageByZip.csv"
+    )
+
+  print(filename)
+  
+  temp <- read_csv(filename)
+  
+  pge_20_elec <- rbind(pge_20_elec,temp)
+  # Note rbind requires field names to be consistent for every new thing that you add.
+
+  saveRDS(pge_20_elec, "pge_20_elec.rds")
+}
+```
+
+
+
+
+```{r}
+filepath <- "C:/Users/Kevin/OneDrive/Documents/R Assignments/Assignment 1/GasUsage"
+ds <- get_dset(filepath,"Gas", "Gas- Residential")
+#print(ds)
+# ds <- filter(
+#   ds,
+#   CUSTOMERCLASS %in%
+#     c(
+#       "Gas- Residential",
+#       "Gas- Commercial"
+#     )
+#   
+# )
+print(ds)
+```
+
+```{r}
+print(ds)
+ds_chart <-
+  ds %>% 
+  ggplot() +
+  geom_bar(
+    aes(
+      x = YEAR,
+      y = TOTALTHM,
+      fill = CUSTOMERCLASS
+    ),
+    stat = "identity",
+    position = "stack"
+  ) +
+  labs(
+    x = "Year",
+    y = "thm",
+    title = "PG&E Territory Monthly Gas Usage, 2017-2021",
+    fill = "Gas Type"
+  ) + xlim(2017,2021)
+
+ds_chart
+```
+
+```{r}
+plot_ly() %>% 
+  add_trace(
+    data = ds %>% filter(CUSTOMERCLASS == "Gas- Residential"),
+    x = ~MONTH,
+    y = ~TOTALTHM,
+    type = "bar",
+    name = "Residential"
+  ) %>% 
+  add_trace(
+    data = ds %>% filter(CUSTOMERCLASS == "Gas- Commercial"),
+    x = ~MONTH,
+    y = ~TOTALTHM,
+    type = "bar",
+    name = "Commercial"
+  ) %>% 
+  layout(
+    xaxis = list(
+      title = "Month",
+      fixedrange = T,
+      range=c(1,12)
+    ),
+    yaxis = list(
+      title = "thm",
+      fixedrange = T
+    ),
+    barmode = "stack",
+    legend = list(title = list(text = "Gas Type"))
+  ) %>% 
+  config(displayModeBar = F)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
